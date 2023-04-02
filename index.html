@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Interpolation Testing</title>
+        <script src="script.js" defer></script>
+        <link rel="stylesheet" href="style.css"/>
+    </head>
+    <body>
+        <canvas></canvas>
+        <div id="equation-container">
+            <div>
+                <span>Y=</span>
+                <input id="equation" value="Math.sin(x*t)+Math.cos(t)">
+            </div>
+            <div>
+                <span>t=</span>
+                <span id="time-display">0</span>
+            </div>
+            <div>
+                <span>Use quadratic interpolation:</span>
+                <input id="using-quadratic" type="checkbox" checked>
+            </div>
+        </div>
+    </body>
+</html>
