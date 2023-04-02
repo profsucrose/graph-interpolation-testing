@@ -9,16 +9,24 @@
         <canvas></canvas>
         <div id="equation-container">
             <div>
-                <span>Y=</span>
-                <input id="equation" value="Math.sin(x*t)+Math.cos(t)">
+                <span>y=</span>
+                <input id="equation" value="Math.sin(x*t)+Math.cos(t)" size="50">
             </div>
             <div>
                 <span>t=</span>
                 <span id="time-display">0</span>
             </div>
             <div>
+                <span>refresh period ticks=</span>
+                <span id="refresh-period-display">0</span>
+            </div>
+            <div>
                 <span>Use quadratic interpolation:</span>
                 <input id="using-quadratic" type="checkbox" checked>
+            </div>
+            <div>
+                <span>Interpolate across frames:</span>
+                <input id="using-interpolation" type="checkbox" checked>
             </div>
         </div>
     </body>

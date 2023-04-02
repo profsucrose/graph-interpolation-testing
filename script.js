@@ -1,7 +1,9 @@
 const canvas = document.querySelector("canvas");
 const mathInput = document.querySelector("#equation");
 const timeDisplay = document.querySelector("#time-display");
+const refreshPeriodDisplay = document.querySelector("#refresh-period-display");
 const usingQuadratic = document.querySelector("#using-quadratic");
+const usingInterpolation = document.querySelector("#using-interpolation");
 
 canvas.width = 500;
 canvas.height = 500;
@@ -33,14 +35,14 @@ let minX = -10;
 let maxX = 10;
 let minY = -10;
 let maxY = 10;
-let sampleCount = 100;
+let sampleCount = 129;
 
 function SampleBuffer(sampleCount) {
   const samples = new Float32Array(sampleCount);
 
   let minX, maxX, sampleWidth;
 
-  function refreshSamples(expression, _minX, _maxX) {
+  function refreshSamples(expression, t, _minX, _maxX) {
     minX = _minX;
     maxX = _maxX;
 
@@ -101,6 +103,7 @@ function worldToCanvas(x, y) {
 
 function axes() {
   for (let x = minX; x <= maxX + 1e-6; x += 1) {
+    x = Math.floor(x);
     if (Math.abs(x) < 1e-6) continue;
     ctx.beginPath();
 
@@ -149,13 +152,13 @@ function axes() {
   ctx.stroke();
 }
 
-function render(sampler, t) {
+function render(sampler) {
   const sampleWidth = (maxX - minX) / (sampleCount - 1);
 
   ctx.beginPath();
   for (let i = 0; i < sampleCount; i++) {
     const x = minX + sampleWidth * i;
-    const y = evaluate(expression, x, t);
+    const y = sampler(x);
 
     const [canvasX, canvasY] = worldToCanvas(x, y);
 
@@ -168,7 +171,7 @@ function render(sampler, t) {
   ctx.stroke();
 }
 
-function renderQuadratic(expression, t) {
+function renderQuadratic(sampler) {
   const sampleWidth = (maxX - minX) / (sampleCount - 1);
 
   ctx.beginPath();
@@ -177,13 +180,12 @@ function renderQuadratic(expression, t) {
     const middleX = startX + sampleWidth;
     const endX = middleX + sampleWidth;
 
-    const startY = evaluate(expression, startX, t);
-    const middleY = evaluate(expression, middleX, t);
-    const endY = evaluate(expression, endX, t);
+    const startY = sampler(startX);
+    const middleY = sampler(middleX);
+    const endY = sampler(endX);
 
     const cpX = 2 * middleX - startX / 2 - endX / 2;
     const cpY = 2 * middleY - startY / 2 - endY / 2;
-
     const [canvasStartX, canvasStartY] = worldToCanvas(startX, startY);
     const [canvasCpX, canvasCpY] = worldToCanvas(cpX, cpY);
     const [canvasEndX, canvasEndY] = worldToCanvas(endX, endY);
@@ -200,20 +202,65 @@ let FPS = 30;
 
 let samplesA = new SampleBuffer(sampleCount);
 let samplesB = new SampleBuffer(sampleCount);
+let refreshPeriodTicks = 3;
+let ticksSinceRefresh = refreshPeriodTicks;
+
+function sampleInterp(x) {
+  let a = samplesA.sample(x);
+  let b = samplesB.sample(x);
+  return a + ((b - a) / refreshPeriodTicks) * ticksSinceRefresh;
+}
+
+function updateBounds() {
+  // minX += 0.1;
+  // maxX += 0.1;
+  // minX += 0.1*Math.sin(t);
+  // maxX += 0.1*Math.cos(t);
+}
 
 function tick() {
+  const expression = mathInput.value;
+  if (ticksSinceRefresh >= refreshPeriodTicks) {
+    // samplesA.refreshSamples(expression, minX, maxX);
+    // [samplesA, samplesB] = [samplesB, samplesA];
+
+    samplesA.refreshSamples(expression, t, minX - 10, maxX + 10);
+    samplesB.refreshSamples(
+      expression,
+      t + ticksSinceRefresh * (1 / FPS),
+      minX - 10,
+      maxX + 10
+    );
+
+    ticksSinceRefresh = 0;
+  } else {
+    ticksSinceRefresh++;
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   axes();
-  const expression = mathInput.value;
+  const evaluator = (x) => evaluate(expression, x, t);
   try {
-    evaluate(expression, 0, t);
     const r = usingQuadratic.checked ? renderQuadratic : render;
-    r(mathInput.value, t, minX, maxX, minY, maxY, sampleCount);
+    const sampler = usingInterpolation.checked ? sampleInterp : evaluator;
+
+    ctx.strokeStyle = "#00f";
+    r(sampleInterp);
+
+    ctx.strokeStyle = "#f00";
+    r(evaluator);
+
+    ctx.strokeStyle = "#000";
   } catch (e) {
     console.log(e);
   }
   t += 1 / FPS;
   timeDisplay.innerText = t.toFixed(1);
+  refreshPeriodDisplay.innerText = refreshPeriodTicks;
+
+  updateBounds();
 }
+
+// -2/(1 + Math.exp(-x + 5)) + (-2)/(1 + (x-30)**2)
 
 setInterval(tick, 1000 / FPS);
