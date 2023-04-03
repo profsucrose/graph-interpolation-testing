@@ -13,10 +13,12 @@ canvas.height = 500;
 
 const ctx = canvas.getContext("2d");
 
+let evaluator = new Function("x", "t", `return ${mathInput.value}`);
+
 function secondOrderInterp(x0, x1, x2, y0, y1, y2) {
   const a0 =
     ((x1 * x2) / ((x2 - x0) * (x1 - x0))) * y0 +
-    ((-x0 * x2) / ((x1 - x0) * (x2 - x1))) * y1 +
+    (-(x0 * x2) / ((x1 - x0) * (x2 - x1))) * y1 +
     ((x0 * x1) / ((x2 - x0) * (x2 - x1))) * y2;
   const a1 =
     (-(x2 + x1) / ((x2 - x0) * (x1 - x0))) * y0 +
@@ -48,7 +50,7 @@ function SampleBuffer(sampleCount) {
 
   let minX, maxX, sampleWidth;
 
-  function refreshSamples(expression, t, _minX, _maxX) {
+  function refreshSamples(evaluator, t, _minX, _maxX) {
     minX = _minX;
     maxX = _maxX;
 
@@ -56,7 +58,7 @@ function SampleBuffer(sampleCount) {
 
     for (let i = 0; i < sampleCount; i++) {
       const x = minX + sampleWidth * i;
-      const y = evaluate(expression, x, t);
+      const y = evaluator(x, t);
 
       samples[i] = y;
     }
@@ -253,14 +255,14 @@ function tick() {
     const currentT = t;
     const nextT = t + refreshPeriodTicks * (1 / FPS);
 
-    samplesA.refreshSamples(expression, t, minX - 10, maxX + 10);
+    samplesA.refreshSamples(evaluator, t, minX - 10, maxX + 10);
     samplesB.refreshSamples(
-      expression,
+      evaluator,
       currentT + (nextT - currentT) / 2,
       minX - 10,
       maxX + 10
     );
-    samplesC.refreshSamples(expression, nextT, minX - 10, maxX + 10);
+    samplesC.refreshSamples(evaluator, nextT, minX - 10, maxX + 10);
 
     // [samplesA, samplesB] = [samplesB, samplesA];
     // samplesB.refreshSamples(expression, t, minX - 10, maxX + 10);
@@ -272,16 +274,18 @@ function tick() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   axes();
-  const evaluator = (x) => evaluate(expression, x, t);
+
+  const _evaluator = (x) => evaluator(x, t);
+
   try {
     const r = usingQuadratic.checked ? renderQuadratic : render;
-    const sampler = usingInterpolation.checked ? sampleInterp : evaluator;
+    const sampler = usingInterpolation.checked ? sampleInterp : _evaluator;
 
     ctx.strokeStyle = "#00f";
     r(sampleInterp);
 
     ctx.strokeStyle = "#f00";
-    r(evaluator);
+    r(_evaluator);
 
     ctx.strokeStyle = "#000";
   } catch (e) {
@@ -293,6 +297,17 @@ function tick() {
 
   updateBounds();
 }
+
+mathInput.addEventListener("keyup", () => {
+  const expression = mathInput.value;
+  const newEvaluator = new Function("x", "t", `return ${expression}`);
+  try {
+    newEvaluator(0, 0);
+    evaluator = newEvaluator;
+  } catch (e) {
+    console.log("Error in updating function", e);
+  }
+});
 
 // -2/(1 + Math.exp(-x + 5)) + (-2)/(1 + (x-30)**2)
 
