@@ -4,24 +4,30 @@ const timeDisplay = document.querySelector("#time-display");
 const refreshPeriodDisplay = document.querySelector("#refresh-period-display");
 const usingQuadratic = document.querySelector("#using-quadratic");
 const usingInterpolation = document.querySelector("#using-interpolation");
+const usingQuadraticOverLinearInterpolation = document.querySelector(
+  "#using-quadratic-for-interpolation"
+);
 
 canvas.width = 500;
 canvas.height = 500;
 
 const ctx = canvas.getContext("2d");
 
-// a0 =
-//   ((x1 * x2) / ((x2 - x0) * (x1 - x0))) * y0 +
-//   ((-x0 * x2) / ((x1 - x0) * (x2 - x1))) * y1 +
-//   ((x0 * x1) / ((x2 - x0) * (x2 - x1))) * y2;
-// a1 =
-//   (-(x2 + x1) / ((x2 - x0) * (x1 - x0))) * y0 +
-//   ((x2 + x0) / ((x1 - x0) * (x2 - x1))) * y1 +
-//   (-(x1 + x0) / ((x2 - x0) * (x2 - x1))) * y2;
-// a2 =
-//   (1 / ((x2 - x0) * (x1 - x0))) * y0 +
-//   (-1 / ((x1 - x0) * (x2 - x1))) * y1 +
-//   (1 / ((x2 - x0) * (x2 - x1))) * y2;
+function secondOrderInterp(x0, x1, x2, y0, y1, y2) {
+  const a0 =
+    ((x1 * x2) / ((x2 - x0) * (x1 - x0))) * y0 +
+    ((-x0 * x2) / ((x1 - x0) * (x2 - x1))) * y1 +
+    ((x0 * x1) / ((x2 - x0) * (x2 - x1))) * y2;
+  const a1 =
+    (-(x2 + x1) / ((x2 - x0) * (x1 - x0))) * y0 +
+    ((x2 + x0) / ((x1 - x0) * (x2 - x1))) * y1 +
+    (-(x1 + x0) / ((x2 - x0) * (x2 - x1))) * y2;
+  const a2 =
+    (1 / ((x2 - x0) * (x1 - x0))) * y0 +
+    (-1 / ((x1 - x0) * (x2 - x1))) * y1 +
+    (1 / ((x2 - x0) * (x2 - x1))) * y2;
+  return (x) => a2 * x ** 2 + a1 * x + a0;
+}
 
 // p0x = 1;
 // p0y = 1;
@@ -200,15 +206,29 @@ let t = 0;
 
 let FPS = 30;
 
-let samplesA = new SampleBuffer(sampleCount);
-let samplesB = new SampleBuffer(sampleCount);
+let samplesA = SampleBuffer(sampleCount);
+let samplesB = SampleBuffer(sampleCount);
+let samplesC = SampleBuffer(sampleCount);
+
 let refreshPeriodTicks = 3;
 let ticksSinceRefresh = refreshPeriodTicks;
 
 function sampleInterp(x) {
   let a = samplesA.sample(x);
   let b = samplesB.sample(x);
-  return a + ((b - a) / refreshPeriodTicks) * ticksSinceRefresh;
+  let c = samplesC.sample(x);
+  if (usingQuadraticOverLinearInterpolation.checked) {
+    return secondOrderInterp(
+      0,
+      0.5,
+      1,
+      a,
+      b,
+      c
+    )(ticksSinceRefresh / refreshPeriodTicks);
+  } else {
+    return a + ((c - a) / refreshPeriodTicks) * ticksSinceRefresh;
+  }
 }
 
 function updateBounds() {
@@ -218,19 +238,32 @@ function updateBounds() {
   // maxX += 0.1*Math.cos(t);
 }
 
+function setSampleCount(_sampleCount) {
+  sampleCount = _sampleCount;
+  samplesA = SampleBuffer(sampleCount);
+  samplesB = SampleBuffer(sampleCount);
+  samplesC = SampleBuffer(sampleCount);
+}
+
 function tick() {
   const expression = mathInput.value;
   if (ticksSinceRefresh >= refreshPeriodTicks) {
     // samplesA.refreshSamples(expression, minX, maxX);
-    // [samplesA, samplesB] = [samplesB, samplesA];
+
+    const currentT = t;
+    const nextT = t + refreshPeriodTicks * (1 / FPS);
 
     samplesA.refreshSamples(expression, t, minX - 10, maxX + 10);
     samplesB.refreshSamples(
       expression,
-      t + ticksSinceRefresh * (1 / FPS),
+      currentT + (nextT - currentT) / 2,
       minX - 10,
       maxX + 10
     );
+    samplesC.refreshSamples(expression, nextT, minX - 10, maxX + 10);
+
+    // [samplesA, samplesB] = [samplesB, samplesA];
+    // samplesB.refreshSamples(expression, t, minX - 10, maxX + 10);
 
     ticksSinceRefresh = 0;
   } else {

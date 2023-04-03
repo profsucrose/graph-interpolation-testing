@@ -10,7 +10,7 @@
         <div id="equation-container">
             <div>
                 <span>y=</span>
-                <input id="equation" value="Math.sin(x*t)+Math.cos(t)" size="50">
+                <input id="equation" value="Math.sin(x)+5*Math.cos(2*t)" size="50">
             </div>
             <div>
                 <span>t=</span>
@@ -21,8 +21,12 @@
                 <span id="refresh-period-display">0</span>
             </div>
             <div>
-                <span>Use quadratic interpolation:</span>
+                <span>Use quadratic interpolation for rendering:</span>
                 <input id="using-quadratic" type="checkbox" checked>
+            </div>
+            <div>
+                <span>Use quadratic interpolation for frame interpolation:</span>
+                <input id="using-quadratic-for-interpolation" type="checkbox" checked>
             </div>
             <div>
                 <span>Interpolate across frames:</span>
