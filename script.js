@@ -290,8 +290,8 @@ function tick() {
     const r = usingQuadratic.checked ? renderQuadratic : render;
     const sampler = usingInterpolation.checked ? sampleInterp : _evaluator;
 
-    ctx.strokeStyle = "#00f";
-    r(sampleInterp);
+    // ctx.strokeStyle = "#00f";
+    // r(sampleInterp);
 
     ctx.strokeStyle = "#f00";
     r(_evaluator);

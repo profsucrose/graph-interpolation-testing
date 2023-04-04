@@ -16,7 +16,7 @@ const math = {
     ];
 
     return (z) => {
-      if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));
+      if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * math.gamma(1 - z));
       else {
         z -= 1;
 
@@ -33,6 +33,80 @@ const math = {
     return Math.abs(g - Math.round(g)) < 1e-6 ? Math.round(g) : g;
   },
 };
+
+function isComplex(x) {
+  return x.hasOwnProperty("re") && x.hasOwnProperty("im");
+}
+
+function complexPow(base, x) {
+  if (typeof base == "number") {
+    if (typeof x == "number") {
+      return base ** x;
+    }
+    if (isComplex(x)) {
+      return complexExp(x.mult(Math.log(base)));
+    }
+  }
+
+  if (isComplex(base)) {
+  }
+}
+
+function complexExp(x) {
+  if (typeof x == "number") {
+    return Math.exp(x);
+  }
+
+  if (isComplex(x)) {
+    let re = x.re;
+    let im = x.im;
+
+    let left = Math.exp(re);
+    let right = Complex(Math.cos(im), Math.sin(im));
+
+    return Complex(left, 0).mult(right);
+  }
+
+  throw Error("Expected real or complex number for complexExp");
+}
+
+function Complex(re, im) {
+  function add(o) {
+    if (typeof o == "number") o = Complex(o, 0);
+    return Complex(re + o.re, im + o.im);
+  }
+
+  function minus(o) {
+    if (typeof o == "number") o = Complex(o, 0);
+    return Complex(re - o.re, im - o.im);
+  }
+
+  function mult(o) {
+    if (typeof o == "number") o = Complex(o, 0);
+    // (a + bi)(c + di);
+    // a * c + c * bi + a * di - b * d(a * c - b * d) + (c * b + a * d);
+
+    return Complex(re * o.re - im * o.im, re * o.im + im * o.re);
+  }
+
+  function exp(o) {
+    let r = Math.sqrt(o.re * o.re + o.im * o.im);
+    let phi = Math.atan(im / re);
+    let left = Math.exp(o.re * Math.log(r) - o.im * phi);
+    let right = complexExp(Complex(0, o.im * Math.log(r) + o.re * phi));
+    return right.mult(left);
+  }
+
+  return {
+    add,
+    minus,
+    mult,
+    exp,
+
+    re,
+    im,
+  };
+}
 
 function MathParser() {
   const prefixOperators = ["-", "+", "sin", "cos", "tan", "floor", "abs"];
