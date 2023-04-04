@@ -4,6 +4,7 @@ const math = {
   tan: Math.tan,
   floor: Math.floor,
   abs: Math.abs,
+  pow: Math.pow,
   gamma: (() => {
     // Approximation for the Gamma function
     // taken from https://stackoverflow.com/questions/15454183/how-to-make-a-function-that-computes-the-factorial-for-numbers-with-decimals
@@ -39,10 +40,11 @@ function MathParser() {
   const postfixOperators = ["!"];
 
   const infixBindingPower = {
-    "*": [3, 4],
-    "/": [3, 4],
-    "+": [1, 2],
-    "-": [1, 2],
+    "^": [5, 6],
+    "*": [4, 3],
+    "/": [4, 3],
+    "+": [2, 1],
+    "-": [2, 1],
   };
 
   const operators = Object.keys(infixBindingPower);
@@ -153,6 +155,7 @@ function MathParser() {
     "+": "+",
     "-": "-",
     "!": "math.factorial",
+    "^": "math.pow",
     sin: "math.sin",
     cos: "math.cos",
     tan: "math.tan",
@@ -165,6 +168,7 @@ function MathParser() {
     "/": (x, y) => x / y,
     "+": (x, y) => x + y,
     "-": (x, y) => x - y,
+    "^": (x, y) => Math.pow(x, y),
     "!": math.factorial,
     sin: math.sin,
     cos: math.cos,
@@ -221,6 +225,7 @@ function MathParser() {
     get lastParsedExpressionUsesT() {
       return usesT;
     },
+    displayExpr,
     parse,
     evaluate,
     expr,
