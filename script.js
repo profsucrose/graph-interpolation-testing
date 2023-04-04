@@ -13,7 +13,11 @@ canvas.height = 500;
 
 const ctx = canvas.getContext("2d");
 
-let evaluator = new Function("x", "t", `return ${mathInput.value}`);
+// let evaluator = new Function("x", "t", `return ${mathInput.value}`);
+
+let mathParser = MathParser();
+
+let evaluator = mathParser.parse(mathInput.value);
 
 function secondOrderInterp(x0, x1, x2, y0, y1, y2) {
   const a0 =
@@ -300,8 +304,8 @@ function tick() {
 
 mathInput.addEventListener("keyup", () => {
   const expression = mathInput.value;
-  const newEvaluator = new Function("x", "t", `return ${expression}`);
   try {
+    const newEvaluator = mathParser.parse(expression);
     newEvaluator(0, 0);
     evaluator = newEvaluator;
   } catch (e) {
