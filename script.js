@@ -7,17 +7,22 @@ const usingInterpolation = document.querySelector("#using-interpolation");
 const usingQuadraticOverLinearInterpolation = document.querySelector(
   "#using-quadratic-for-interpolation"
 );
+const usingJS = document.querySelector("#using-js");
 
 canvas.width = 500;
 canvas.height = 500;
 
 const ctx = canvas.getContext("2d");
 
-// let evaluator = new Function("x", "t", `return ${mathInput.value}`);
-
 let mathParser = MathParser();
+let evaluator;
 
-let evaluator = mathParser.parse(mathInput.value);
+if (usingJS.checked) {
+  evaluator = mathParser.parse(mathInput.value);
+} else {
+  let expr = mathParser.expr(mathInput.value);
+  evaluator = (x, t) => mathParser.evaluate(expr, { x, t });
+}
 
 function secondOrderInterp(x0, x1, x2, y0, y1, y2) {
   const a0 =
@@ -47,7 +52,7 @@ let minX = -10;
 let maxX = 10;
 let minY = -10;
 let maxY = 10;
-let sampleCount = 129;
+let sampleCount = 500;
 
 function SampleBuffer(sampleCount) {
   const samples = new Float32Array(sampleCount);
@@ -305,7 +310,13 @@ function tick() {
 mathInput.addEventListener("keyup", () => {
   const expression = mathInput.value;
   try {
-    const newEvaluator = mathParser.parse(expression);
+    let newEvaluator;
+    if (usingJS.checked) {
+      newEvaluator = mathParser.parse(expression);
+    } else {
+      let expr = mathParser.expr(expression);
+      newEvaluator = (x, t) => mathParser.evaluate(expr, { x, t });
+    }
     newEvaluator(0, 0);
     evaluator = newEvaluator;
   } catch (e) {

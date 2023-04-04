@@ -160,6 +160,19 @@ function MathParser() {
     abs: "math.abs",
   };
 
+  const functions = {
+    "*": (x, y) => x * y,
+    "/": (x, y) => x / y,
+    "+": (x, y) => x + y,
+    "-": (x, y) => x - y,
+    "!": math.factorial,
+    sin: math.sin,
+    cos: math.cos,
+    tan: math.tan,
+    floor: math.floor,
+    abs: math.abs,
+  };
+
   let usesT = false;
 
   function genCode(expr) {
@@ -179,6 +192,23 @@ function MathParser() {
     return expr;
   }
 
+  function evaluate(expr, scope) {
+    if (Array.isArray(expr)) {
+      const [fnName, args] = expr;
+      const fn = functions[fnName];
+      return fn.apply(
+        null,
+        args.map((arg) => evaluate(arg, scope))
+      );
+    }
+
+    if (scope.hasOwnProperty(expr)) {
+      return scope[expr];
+    }
+
+    return Number(expr);
+  }
+
   function parse(input) {
     usesT = false;
     let ast = expr(input);
@@ -192,6 +222,8 @@ function MathParser() {
       return usesT;
     },
     parse,
+    evaluate,
+    expr,
   };
 
   // let s = expr("-1 * -sin(2 + 3)");
