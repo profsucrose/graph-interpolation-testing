@@ -18,7 +18,7 @@ let mathParser = MathParser();
 let evaluator;
 
 if (usingJS.checked) {
-  evaluator = mathParser.parse(mathInput.value);
+  evaluator = mathParser.compile(mathInput.value);
 } else {
   let expr = mathParser.expr(mathInput.value);
   evaluator = (x, t) => mathParser.evaluate(expr, { x, t });
@@ -312,7 +312,7 @@ mathInput.addEventListener("keyup", () => {
   try {
     let newEvaluator;
     if (usingJS.checked) {
-      newEvaluator = mathParser.parse(expression);
+      newEvaluator = mathParser.compile(expression);
     } else {
       let expr = mathParser.expr(expression);
       newEvaluator = (x, t) => mathParser.evaluate(expr, { x, t });

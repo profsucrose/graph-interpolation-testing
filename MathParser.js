@@ -1,4 +1,4 @@
-const math = {
+const _math = {
   sin: Math.sin,
   cos: Math.cos,
   tan: Math.tan,
@@ -16,7 +16,8 @@ const math = {
     ];
 
     return (z) => {
-      if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * math.gamma(1 - z));
+      if (z < 0.5)
+        return Math.PI / (Math.sin(Math.PI * z) * _math.gamma(1 - z));
       else {
         z -= 1;
 
@@ -29,7 +30,7 @@ const math = {
     };
   })(),
   factorial: (n) => {
-    const g = math.gamma(n + 1);
+    const g = _math.gamma(n + 1);
     return Math.abs(g - Math.round(g)) < 1e-6 ? Math.round(g) : g;
   },
 };
@@ -121,6 +122,11 @@ function MathParser() {
     "-": [2, 1],
   };
 
+  const prefixBindingPower = {
+    "+": 5,
+    "-": 5,
+  };
+
   const operators = Object.keys(infixBindingPower);
 
   const tokenizer = new RegExp(
@@ -170,7 +176,8 @@ function MathParser() {
     }
 
     if (prefixOperators.includes(lhs)) {
-      let rhs = exprBp(tokens, 0);
+      let rBp = prefixBindingPower[lhs] ?? 0;
+      let rhs = exprBp(tokens, rBp);
       lhs = [lhs, [rhs]];
     }
 
@@ -213,7 +220,6 @@ function MathParser() {
 
   function expr(input) {
     const tokens = tokenize(input);
-    console.log("tokens", tokens);
     return exprBp(tokens, 0);
   }
 
@@ -228,13 +234,13 @@ function MathParser() {
   const functionToJavascript = {
     "+": "+",
     "-": "-",
-    "!": "math.factorial",
-    "^": "math.pow",
-    sin: "math.sin",
-    cos: "math.cos",
-    tan: "math.tan",
-    floor: "math.floor",
-    abs: "math.abs",
+    "!": "_math.factorial",
+    "^": "_math.pow",
+    sin: "_math.sin",
+    cos: "_math.cos",
+    tan: "_math.tan",
+    floor: "_math.floor",
+    abs: "_math.abs",
   };
 
   const functions = {
@@ -243,12 +249,17 @@ function MathParser() {
     "+": (x, y) => x + y,
     "-": (x, y) => x - y,
     "^": (x, y) => Math.pow(x, y),
-    "!": math.factorial,
-    sin: math.sin,
-    cos: math.cos,
-    tan: math.tan,
-    floor: math.floor,
-    abs: math.abs,
+    "!": _math.factorial,
+    sin: _math.sin,
+    cos: _math.cos,
+    tan: _math.tan,
+    floor: _math.floor,
+    abs: _math.abs,
+  };
+
+  const constants = {
+    e: Math.E,
+    i: Complex(0, 1),
   };
 
   let usesT = false;
@@ -260,15 +271,20 @@ function MathParser() {
         return `${functionToJavascript[fn]}(${genCode(args[0])})`;
       }
       if ("+-*/".includes(fn)) {
-        return `${genCode(args[0])}${fn}${genCode(args[1])}`;
+        return `(${genCode(args[0])})${fn}(${genCode(args[1])})`;
       }
       return `${functionToJavascript[fn]}(${args
         .map((arg) => genCode(arg))
         .join(",")})`;
     }
     if (expr == "t") usesT = true;
+    if (constants.hasOwnProperty(expr)) {
+      return constants[expr];
+    }
     return expr;
   }
+
+  // 2 / (1 + _math.pow(2.718281828459045, -(x + 5)))
 
   function evaluate(expr, scope) {
     if (Array.isArray(expr)) {
@@ -287,7 +303,7 @@ function MathParser() {
     return Number(expr);
   }
 
-  function parse(input) {
+  function compile(input) {
     usesT = false;
     let ast = expr(input);
     let body = genCode(ast);
@@ -300,7 +316,7 @@ function MathParser() {
       return usesT;
     },
     displayExpr,
-    parse,
+    compile,
     evaluate,
     expr,
   };
